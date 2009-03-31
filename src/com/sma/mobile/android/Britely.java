@@ -139,7 +139,7 @@ public class Britely extends Activity {
 		   return true;
 	   	}
 	   }
-	   return false;
+	   return true;
    }
    
    private static class BriteView extends LinearLayout {
@@ -250,6 +250,10 @@ public class Britely extends Activity {
 		@Override
 		public boolean onKeyDown(int keyCode, KeyEvent event) {
 			super.onKeyDown(keyCode, event);
+			
+			if (keyCode == 82)
+				return false;
+			
 			Log.i("onKeyDown", event.toString());
 			return true;
 		}
