@@ -4,8 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -15,6 +19,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.View.OnTouchListener;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.ImageView.ScaleType;
@@ -29,6 +34,11 @@ public class Britely extends Activity {
 	public int screenWidth;
     public int screenHeight;
     public List<Peg> board;
+    
+    public static final int MY_TABLE_LAYOUT_ID = 100;
+    public static final int BOARD_ID = 101;
+    
+    BriteView briteView;
 	
 	public OnTouchListener imageViewToucher = new OnTouchListener() {
 
@@ -73,15 +83,18 @@ public class Britely extends Activity {
         window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);         
         requestWindowFeature(Window.FEATURE_NO_TITLE);
 
-        setContentView(R.layout.main);
+        briteView = new BriteView(this);
+        briteView.setFocusable(true);
+        briteView.setFocusableInTouchMode(true);
+        setContentView(briteView);
                 
         int rows = (screenHeight / tileSize);
         int cols = screenWidth / tileSize;
         
         board = new ArrayList<Peg>();
         
-        TableLayout tl = (TableLayout)findViewById(R.id.myTableLayout);
-        tl.setOnTouchListener(imageViewToucher);
+        TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
+        briteView.setOnTouchListener(imageViewToucher);
         
         for(int y = 0; y < rows; y++) {
         	
@@ -202,6 +215,36 @@ public class Britely extends Activity {
 	   	}
 	   }
 	   return false;
+   }
+   
+   private static class BriteView extends LinearLayout {
+
+		public BriteView(Context context) {
+			super(context);			
+			this.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+			this.setOrientation(VERTICAL);
+			this.setId(BOARD_ID);
+			TableLayout tableLayout = new TableLayout(this.getContext());
+    		LayoutParams lp = new LayoutParams(TableLayout.LayoutParams.FILL_PARENT, TableLayout.LayoutParams.FILL_PARENT);
+    		tableLayout.setId(MY_TABLE_LAYOUT_ID);
+			tableLayout.setLayoutParams(lp);
+			tableLayout.setBackgroundColor(Color.BLACK);
+			this.addView(tableLayout);
+		}
+		
+		@Override
+		public boolean onTrackballEvent(MotionEvent event) {
+			super.onTrackballEvent(event);
+			Log.i("onTrackballEvent", event.toString());
+			return true;
+		}
+		
+		@Override
+		public boolean onKeyDown(int keyCode, KeyEvent event) {
+			super.onKeyDown(keyCode, event);
+			Log.i("onKeyDown", event.toString());
+			return true;
+		}
    }
       
 }
