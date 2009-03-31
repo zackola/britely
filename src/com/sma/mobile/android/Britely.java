@@ -27,13 +27,12 @@ import android.widget.TableRow.LayoutParams;
 
 public class Britely extends Activity {
 
-	public int activeColor = R.drawable.red;
+	public static int activeColor = R.drawable.red;
 	public int currentX = 0;
 	public int currentY = 0;
-	public int tileSize = 18; 
-	public int screenWidth;
-    public int screenHeight;
-    public List<Peg> board;
+	public static int tileSize = 18; 
+	public static int screenWidth;
+    public static int screenHeight;
     
     public static final int MY_TABLE_LAYOUT_ID = 100;
     public static final int BOARD_ID = 101;
@@ -51,11 +50,13 @@ public class Britely extends Activity {
 			int y = (int)(motionEvent.getY() / tileSize);		
 			int index = x + y * (screenWidth / tileSize);
 
-			Peg p = board.get(index);			
+			briteView.recticleX = x;
+			briteView.recticleY = y;
+			Peg p = briteView.board.get(index);			
 			
 			switch(motionEvent.getAction()) {
 			case MotionEvent.ACTION_MOVE: {
-				for (Peg _p : board) {
+				for (Peg _p : briteView.board) {
 					_p.tile.setImageResource(_p.currentColor);
 				}				
 				p.tile.setImageResource(R.drawable.recticle);				
@@ -88,10 +89,9 @@ public class Britely extends Activity {
         briteView.setFocusableInTouchMode(true);
         setContentView(briteView);
                 
-        int rows = (screenHeight / tileSize);
+        int rows = screenHeight / tileSize;
         int cols = screenWidth / tileSize;
         
-        board = new ArrayList<Peg>();
         
         TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
         briteView.setOnTouchListener(imageViewToucher);
@@ -121,7 +121,7 @@ public class Britely extends Activity {
         		tr.addView(tile, lp);
         		
 				Peg p = new Peg(tile, index);
-				board.add(index, p);				
+				briteView.board.add(index, p);				
         		
 			}
         	tl.addView(tr,new TableLayout.LayoutParams());        
@@ -219,8 +219,13 @@ public class Britely extends Activity {
    
    private static class BriteView extends LinearLayout {
 
+	    public List<Peg> board;
+	   	int recticleX = 1;
+	   	int recticleY = 1;
+	   
 		public BriteView(Context context) {
 			super(context);			
+	        this.board = new ArrayList<Peg>();			
 			this.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
 			this.setOrientation(VERTICAL);
 			this.setId(BOARD_ID);
@@ -236,6 +241,46 @@ public class Britely extends Activity {
 		public boolean onTrackballEvent(MotionEvent event) {
 			super.onTrackballEvent(event);
 			Log.i("onTrackballEvent", event.toString());
+			
+			switch (event.getAction()){
+			case MotionEvent.ACTION_MOVE: {
+				
+				int x = (int)(event.getX());				
+				int y = (int)(event.getY());
+				if (x < 0 && recticleX > 0) {
+					Log.i("TRACK", "Decrementing X");
+					recticleX -= 1;
+				} else if (x > 0 && recticleX < screenWidth) {
+					Log.i("TRACK", "Incrementing X");
+					recticleX += 1;
+				} 
+				if (y < 0 && recticleY > 0) {
+					Log.i("TRACK", "Decrementing Y");					
+					recticleY -= 1;
+				} else if (y > 0 && recticleY < screenHeight) {
+					Log.i("TRACK", "Incrementing Y");					
+					recticleY += 1;
+				}
+					
+				int index = recticleX + recticleY * (screenWidth / tileSize);
+
+				Peg p = board.get(index);
+				
+				for (Peg _p : board) {
+					_p.tile.setImageResource(_p.currentColor);
+				}				
+				p.tile.setImageResource(R.drawable.recticle);
+				Log.i("RECT", String.valueOf(recticleX) + "," + String.valueOf(recticleY));
+				break;
+			}
+			case MotionEvent.ACTION_DOWN: {
+				int index = recticleX + recticleY * (screenWidth / tileSize);
+				Peg p = board.get(index);
+				p.tile.setImageResource(activeColor);
+				p.currentColor = activeColor;				
+				break;
+			}			
+			}
 			return true;
 		}
 		
