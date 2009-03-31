@@ -17,7 +17,6 @@ import android.view.SubMenu;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.View.OnTouchListener;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TableLayout;
@@ -38,42 +37,7 @@ public class Britely extends Activity {
     public static final int BOARD_ID = 101;
     
     BriteView briteView;
-	
-	public OnTouchListener imageViewToucher = new OnTouchListener() {
 
-		public boolean onTouch(View target, MotionEvent motionEvent) {
-			if (motionEvent.getEdgeFlags() != 0) {
-				return false;
-			}
-			
-			int x = (int)(motionEvent.getX() / tileSize);				
-			int y = (int)(motionEvent.getY() / tileSize);		
-			int index = x + y * (screenWidth / tileSize);
-
-			briteView.recticleX = x;
-			briteView.recticleY = y;
-			Peg p = briteView.board.get(index);			
-			
-			switch(motionEvent.getAction()) {
-			case MotionEvent.ACTION_MOVE: {
-				for (Peg _p : briteView.board) {
-					_p.tile.setImageResource(_p.currentColor);
-				}				
-				p.tile.setImageResource(R.drawable.recticle);				
-				break;
-			}
-			case MotionEvent.ACTION_UP: {
-				p.tile.setImageResource(activeColor);
-				p.currentColor = activeColor;
-				break;
-			}			
-			}			
-			return true;
-		}
-		
-	};
-	
-	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,11 +54,9 @@ public class Britely extends Activity {
         setContentView(briteView);
                 
         int rows = screenHeight / tileSize;
-        int cols = screenWidth / tileSize;
-        
+        int cols = screenWidth / tileSize;       
         
         TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
-        briteView.setOnTouchListener(imageViewToucher);
         
         for(int y = 0; y < rows; y++) {
         	
@@ -235,6 +197,7 @@ public class Britely extends Activity {
 			tableLayout.setLayoutParams(lp);
 			tableLayout.setBackgroundColor(Color.BLACK);
 			this.addView(tableLayout);
+	        setOnTouchListener(touchListener);
 		}
 		
 		@Override
@@ -290,6 +253,40 @@ public class Britely extends Activity {
 			Log.i("onKeyDown", event.toString());
 			return true;
 		}
+		
+		public OnTouchListener touchListener = new OnTouchListener() {
+
+			public boolean onTouch(View target, MotionEvent motionEvent) {
+				if (motionEvent.getEdgeFlags() != 0) {
+					return false;
+				}
+				
+				int x = (int)(motionEvent.getX() / tileSize);				
+				int y = (int)(motionEvent.getY() / tileSize);		
+				int index = x + y * (screenWidth / tileSize);
+
+				recticleX = x;
+				recticleY = y;
+				Peg p = board.get(index);			
+				
+				switch(motionEvent.getAction()) {
+				case MotionEvent.ACTION_MOVE: {
+					for (Peg _p : board) {
+						_p.tile.setImageResource(_p.currentColor);
+					}				
+					p.tile.setImageResource(R.drawable.recticle);				
+					break;
+				}
+				case MotionEvent.ACTION_UP: {
+					p.tile.setImageResource(activeColor);
+					p.currentColor = activeColor;
+					break;
+				}			
+				}			
+				return true;
+			}
+			
+		};		
    }
       
 }
