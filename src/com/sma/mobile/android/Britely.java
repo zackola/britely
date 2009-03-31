@@ -22,7 +22,6 @@ import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.ImageView.ScaleType;
-import android.widget.TableRow.LayoutParams;
 
 public class Britely extends Activity {
 
@@ -51,43 +50,7 @@ public class Britely extends Activity {
         briteView = new BriteView(this);
         briteView.setFocusable(true);
         briteView.setFocusableInTouchMode(true);
-        setContentView(briteView);
-                
-        int rows = screenHeight / tileSize;
-        int cols = screenWidth / tileSize;       
-        
-        TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
-        
-        for(int y = 0; y < rows; y++) {
-        	
-        	TableRow tr = new TableRow(this);
-
-        	for(int x = 0; x < cols; x++) {
-				
-				int index = x + y*cols;
-				ImageView tile = new ImageView(this);
-				tile.setImageResource(R.drawable.empty);
-				tile.setId(index);
-				tile.setAdjustViewBounds(true);
-				tile.setMaxHeight(tileSize);
-				tile.setMaxWidth(tileSize);
-				tile.setScaleType(ScaleType.FIT_CENTER);
-        		LayoutParams lp = new LayoutParams();
-        		lp.width = LayoutParams.WRAP_CONTENT;
-        		lp.height = LayoutParams.WRAP_CONTENT;
-        		
-				if (y % 2 == 1) {
-	        		lp.setMargins(0, 0, -tileSize, 0);
-				}
-        		tile.setLayoutParams(lp);
-        		tr.addView(tile, lp);
-        		
-				Peg p = new Peg(tile, index);
-				briteView.board.add(index, p);				
-        		
-			}
-        	tl.addView(tr,new TableLayout.LayoutParams());        
-        }
+        setContentView(briteView);                
     }
    
     
@@ -197,6 +160,43 @@ public class Britely extends Activity {
 			tableLayout.setLayoutParams(lp);
 			tableLayout.setBackgroundColor(Color.BLACK);
 			this.addView(tableLayout);
+			
+	        int rows = screenHeight / tileSize;
+	        int cols = screenWidth / tileSize;       
+	        
+	        // TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
+	        
+	        for(int y = 0; y < rows; y++) {
+	        	
+	        	TableRow tr = new TableRow(this.getContext().getApplicationContext());
+
+	        	for(int x = 0; x < cols; x++) {
+					
+					int index = x + y*cols;
+					ImageView tile = new ImageView(this.getContext().getApplicationContext());
+					tile.setImageResource(R.drawable.empty);
+					tile.setId(index);
+					tile.setAdjustViewBounds(true);
+					tile.setMaxHeight(tileSize);
+					tile.setMaxWidth(tileSize);
+					tile.setScaleType(ScaleType.FIT_CENTER);
+
+					TableRow.LayoutParams lp1 = new TableRow.LayoutParams();
+	        		lp1.width = LayoutParams.WRAP_CONTENT;
+	        		lp1.height = LayoutParams.WRAP_CONTENT;
+	        		
+					if (y % 2 == 1) {
+		        		lp1.setMargins(0, 0, -tileSize, 0);
+					}
+	        		tile.setLayoutParams(lp1);
+	        		tr.addView(tile, lp1);
+	        		
+					Peg p = new Peg(tile, index);
+					board.add(index, p);				
+	        		
+				}
+	        	tableLayout.addView(tr,new TableLayout.LayoutParams());        
+	        }			
 	        setOnTouchListener(touchListener);
 		}
 		
