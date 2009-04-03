@@ -12,6 +12,7 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
@@ -70,6 +71,7 @@ public class Britely extends Activity {
 		briteView = new BriteView(this);
 		briteView.setFocusable(true);
 		briteView.setFocusableInTouchMode(true);
+		briteView.setWillNotDraw(false);
 		setContentView(briteView);
 
 		mediaScanner = new MediaScannerConnection(this,
@@ -87,6 +89,7 @@ public class Britely extends Activity {
 
 	static private final int MENU_ITEM_PALLETE = 0;
 	static private final int MENU_ITEM_SAVE = 1;
+	static private final int MENU_ITEM_HELP = 2;	
 
 	static private final int MENU_ITEM_COLORS_RED = 100;
 	static private final int MENU_ITEM_COLORS_GREEN = 101;
@@ -118,6 +121,9 @@ public class Britely extends Activity {
 
 		MenuItem shareMenuItem = _menu.add(0, MENU_ITEM_SAVE, 2, "Save");
 		shareMenuItem.setIcon(android.R.drawable.ic_menu_send);
+		
+		MenuItem helpMenuItem = _menu.add(0, MENU_ITEM_HELP, 3, "Help");
+		helpMenuItem.setIcon(android.R.drawable.ic_menu_help);		
 		return true;
 
 	}
@@ -167,10 +173,14 @@ public class Britely extends Activity {
 			activeColor = R.drawable.empty;
 			return true;
 		}
+		case MENU_ITEM_HELP: {
+			Toast.makeText(this, "Trackball to move. Alternately  W(up) Z(down) A(left) S(right) Enter to put.", Toast.LENGTH_LONG)
+			.show();			
+			return true;
+		}
 		case MENU_ITEM_SAVE: {
 			Bitmap b = Bitmap.createBitmap(screenWidth, screenHeight,
 					Bitmap.Config.RGB_565);
-			;
 			Canvas c = new Canvas(b);
 			this.briteView.draw(c);
 			try {
@@ -210,9 +220,16 @@ public class Britely extends Activity {
 		public List<Peg> board;
 		int recticleX = 1;
 		int recticleY = 1;
+		int rows;
+		int cols;
+		boolean power = true;
+		Drawable glow;		
 
 		public BriteView(Context context) {
 			super(context);
+			
+			this.glow = getResources().getDrawable(R.drawable.glow);
+			
 			this.board = new ArrayList<Peg>();
 			this.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
 					LayoutParams.FILL_PARENT));
@@ -227,10 +244,8 @@ public class Britely extends Activity {
 			tableLayout.setBackgroundColor(Color.BLACK);
 			this.addView(tableLayout);
 
-			int rows = screenHeight / tileSize;
-			int cols = screenWidth / tileSize;
-
-			// TableLayout tl = (TableLayout)findViewById(MY_TABLE_LAYOUT_ID);
+			rows = screenHeight / tileSize;
+			cols = screenWidth / tileSize;
 
 			for (int y = 0; y < rows; y++) {
 
@@ -325,6 +340,28 @@ public class Britely extends Activity {
 			if (keyCode == 82)
 				return false;			
 			Log.i("onKeyDown", event.toString());
+			
+			if (keyCode == KeyEvent.KEYCODE_W && recticleY > 0) {
+				recticleY -= 1;
+			}
+			if (keyCode == KeyEvent.KEYCODE_Z && recticleY < rows-1) {
+				recticleY += 1;				
+			}
+			if (keyCode == KeyEvent.KEYCODE_A && recticleX > 0) {
+				recticleX -= 1;				
+			}
+			if (keyCode == KeyEvent.KEYCODE_S && recticleX < cols-1) {
+				recticleX += 1;				
+			}			
+			int index = recticleX + recticleY * (screenWidth / tileSize);
+
+			Peg p = board.get(index);
+
+			for (Peg _p : board) {
+				_p.tile.setImageResource(_p.currentColor);
+			}
+			p.tile.setImageResource(R.drawable.recticle);				
+			
 			return true;
 		}
 
@@ -360,6 +397,26 @@ public class Britely extends Activity {
 			}
 
 		};
+		
+		@Override
+		protected void onDraw(Canvas canvas) {
+			 super.onDraw(canvas);
+			
+			glow.setBounds(10, 10, 100, 100);
+			glow.draw(canvas);
+			for (int y = 0; y < rows; y++) {
+				for (int x = 0; x < cols; x++) {
+					int index = x + y * cols;
+					Peg p = board.get(index);
+					if (p.currentColor != R.drawable.empty) {
+						glow.setBounds(x* tileSize, y*tileSize, x* tileSize + 20, y*tileSize + 20);
+						glow.draw(canvas);
+					}
+				}
+			}
+			super.onDraw(canvas);
+		}
+		
 	}
 
 }
