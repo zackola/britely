@@ -11,7 +11,11 @@ public class Peg {
 	public Peg(ImageView _tile, int _index) {
 		tile = _tile;
 		index = _index;
-		currentColor = R.drawable.empty;
-		tile.setImageResource(currentColor);		
+		put(R.drawable.empty);				
+	}
+	
+	public void put(int id) {
+		currentColor = id;
+		tile.setImageResource(id);
 	}
 }
