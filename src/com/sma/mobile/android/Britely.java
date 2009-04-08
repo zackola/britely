@@ -346,7 +346,7 @@ public class Britely extends Activity {
 					recticleY += 1;
 				}
 
-				int index = recticleX + recticleY * (screenWidth / tileSize);
+				int index = getIndex(recticleX, recticleY);
 
 				Peg p = board.get(index);
 
@@ -357,7 +357,7 @@ public class Britely extends Activity {
 				break;
 			}
 			case MotionEvent.ACTION_DOWN: {
-				int index = recticleX + recticleY * (screenWidth / tileSize);
+				int index = getIndex(recticleX, recticleY);
 				Peg p = board.get(index);
 				lastMove[0] = index;
 				lastMove[1] = p.currentColor;
@@ -373,7 +373,7 @@ public class Britely extends Activity {
 			super.onKeyUp(keyCode, event);
 
 			if (keyCode == KeyEvent.KEYCODE_SPACE) {
-				int index = recticleX + recticleY * (screenWidth / tileSize);
+				int index = getIndex(recticleX, recticleY);
 				Peg p = board.get(index);
 				lastMove[0] = index;
 				lastMove[1] = p.currentColor;				
@@ -423,8 +423,8 @@ public class Britely extends Activity {
 
 				int x = (int) (motionEvent.getX() / tileSize);
 				int y = (int) (motionEvent.getY() / tileSize);								
-				
-				int index = x + y * (screenWidth / tileSize);
+
+				int index = getIndex(x, y);
 				Peg p = board.get(index);
 
 				switch (motionEvent.getAction()) {
