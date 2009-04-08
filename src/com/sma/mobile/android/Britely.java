@@ -45,7 +45,7 @@ public class Britely extends Activity {
 	public static int screenHeight;
 
 	// Strings
-	public static final String HELP_MESSAGE = "Menu for options. Trackball to move and put. Keyboard: 1 (up) A (down) Q (left) W (right) and Spacebar to put.";
+	public static final String HELP_MESSAGE = "Menu for options. Trackball to move and put. Keyboard too: 1 (up) A (down) Q (left) W (right) and Spacebar to put.";
 
 	// View Ids
 	public static final int BRITE_VIEW_ID = 1;
