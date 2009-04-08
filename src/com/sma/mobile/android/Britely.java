@@ -43,6 +43,8 @@ public class Britely extends Activity {
 	public static int tileSize = 13;
 	public static int screenWidth;
 	public static int screenHeight;
+	
+	public static int[] lastMove = new int[2];
 
 	// Strings
 	public static final String HELP_MESSAGE = "Menu for options. Trackball to move and put. Keyboard too: 1 (up) A (down) Q (left) W (right) and Spacebar to put.";
@@ -103,6 +105,7 @@ public class Britely extends Activity {
 	static private final int MENU_ITEM_SAVE = 1;
 	static private final int MENU_ITEM_HELP = 2;
 	static private final int MENU_ITEM_CLEAR = 3;
+	static private final int MENU_ITEM_UNDO = 4;	
 
 	static private final int MENU_ITEM_COLORS_RED = 100;
 	static private final int MENU_ITEM_COLORS_GREEN = 101;
@@ -122,6 +125,8 @@ public class Britely extends Activity {
 				.addSubMenu(0, MENU_ITEM_PALLETE, 1, "Colors");
 		colorsMenu.setHeaderIcon(android.R.drawable.ic_menu_slideshow);
 		colorsMenu.setIcon(android.R.drawable.ic_menu_slideshow);
+
+		colorsMenu.add(0, MENU_ITEM_COLORS_EMPTY, 0, "Empty");
 		colorsMenu.add(0, MENU_ITEM_COLORS_RED, 1, "Red");
 		colorsMenu.add(0, MENU_ITEM_COLORS_GREEN, 2, "Green");
 		colorsMenu.add(0, MENU_ITEM_COLORS_BLUE, 3, "Blue");
@@ -130,15 +135,18 @@ public class Britely extends Activity {
 		colorsMenu.add(0, MENU_ITEM_COLORS_ORANGE, 6, "Orange");
 		colorsMenu.add(0, MENU_ITEM_COLORS_YELLOW, 7, "Yellow");
 		colorsMenu.add(0, MENU_ITEM_COLORS_WHITE, 8, "White");
-		colorsMenu.add(0, MENU_ITEM_COLORS_EMPTY, 9, "Empty");
 
-		MenuItem clearMenuItem = _menu.add(0, MENU_ITEM_CLEAR, 3, "Clear");
-		clearMenuItem.setIcon(android.R.drawable.ic_menu_delete);
 
-		MenuItem shareMenuItem = _menu.add(0, MENU_ITEM_SAVE, 2, "Save");
+		MenuItem shareMenuItem = _menu.add(0, MENU_ITEM_SAVE, 1, "Save");
 		shareMenuItem.setIcon(android.R.drawable.ic_menu_send);
 
-		MenuItem helpMenuItem = _menu.add(0, MENU_ITEM_HELP, 3, "Help");
+		MenuItem undoMenuItem = _menu.add(0, MENU_ITEM_UNDO, 2, "Undo");
+		undoMenuItem.setIcon(android.R.drawable.ic_menu_revert);		
+		
+		MenuItem clearMenuItem = _menu.add(0, MENU_ITEM_CLEAR, 3, "Clear");
+		clearMenuItem.setIcon(android.R.drawable.ic_menu_delete);
+		
+		MenuItem helpMenuItem = _menu.add(0, MENU_ITEM_HELP, 4, "Help");
 		helpMenuItem.setIcon(android.R.drawable.ic_menu_help);
 		return true;
 
@@ -201,6 +209,14 @@ public class Britely extends Activity {
 			briteView.invalidate();
 			return true;
 		}
+		case MENU_ITEM_UNDO: {
+			if (lastMove[0] >= 0 && lastMove[1] >= 0) {
+				briteView.board.get(lastMove[0]).put(lastMove[1]);
+			} else {
+				Toast.makeText(this, "Sorry, nothing to undo", Toast.LENGTH_SHORT).show();
+			}
+			return true;
+		}
 		case MENU_ITEM_SAVE: {
 			Bitmap b = Bitmap.createBitmap(screenWidth, screenHeight,
 					Bitmap.Config.RGB_565);
@@ -251,6 +267,8 @@ public class Britely extends Activity {
 			super(context);
 
 			board = new ArrayList<Peg>();
+			lastMove[0] = -1;
+			lastMove[1] = -1;
 			setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
 					LayoutParams.FILL_PARENT));
 			setOrientation(VERTICAL);
@@ -341,8 +359,9 @@ public class Britely extends Activity {
 			case MotionEvent.ACTION_DOWN: {
 				int index = recticleX + recticleY * (screenWidth / tileSize);
 				Peg p = board.get(index);
+				lastMove[0] = index;
+				lastMove[1] = p.currentColor;
 				p.put(activeColor);
-				Log.i(TAG, "Blah");
 				break;
 			}
 			}
@@ -356,6 +375,8 @@ public class Britely extends Activity {
 			if (keyCode == KeyEvent.KEYCODE_SPACE) {
 				int index = recticleX + recticleY * (screenWidth / tileSize);
 				Peg p = board.get(index);
+				lastMove[0] = index;
+				lastMove[1] = p.currentColor;				
 				p.put(activeColor);
 				return true;
 			}
@@ -401,7 +422,8 @@ public class Britely extends Activity {
 				}
 
 				int x = (int) (motionEvent.getX() / tileSize);
-				int y = (int) (motionEvent.getY() / tileSize);
+				int y = (int) (motionEvent.getY() / tileSize);								
+				
 				int index = x + y * (screenWidth / tileSize);
 				Peg p = board.get(index);
 
@@ -416,6 +438,8 @@ public class Britely extends Activity {
 					break;
 				}
 				case MotionEvent.ACTION_UP: {
+					lastMove[0] = index;
+					lastMove[1] = p.currentColor;					
 					p.put(activeColor);					
 					break;
 				}
@@ -425,6 +449,55 @@ public class Britely extends Activity {
 
 		};
 
+		public int getQuadrant(int x, int y) {
+			int quadrant = 1;
+			if (x < screenWidth / 2) { 
+				if (y < screenHeight / 2) {
+					quadrant = 1;
+				}
+				else {
+					quadrant = 4; 
+				}
+			} else {
+				if (y < screenHeight / 2) {
+					quadrant = 2;
+				}
+				else {
+					quadrant = 3;
+				}
+			}
+			
+			switch (quadrant) {
+			case 1: {
+				x -= 2;
+				y -= 2;
+				break;
+			}
+			case 2: {
+				x += 2;
+				y -= 2;
+				break;
+			}
+			case 3: {
+				x += 2;
+				y += 2;
+				break;
+			}
+			case 4: {
+				x -= 2;
+				y += 2;
+				break;
+			}
+			}
+			return quadrant;
+		}
+		
+		public int getIndex(int x, int y) {
+			int index = x + y * (screenWidth / tileSize);
+			return index;
+		}
+		
 	}
+
 
 }
