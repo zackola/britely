@@ -207,7 +207,9 @@ public class Britely extends Activity {
 		}
 		case MENU_ITEM_UNDO: {
 			if (lastMove[0] >= 0 && lastMove[1] >= 0) {
-				briteView.board.get(lastMove[0]).currentColor = lastMove[1];
+				PegView pv = briteView.board.get(lastMove[0]);
+				pv.currentColor = lastMove[1];
+				pv.invalidate();
 			} else {
 				Toast.makeText(this, "Sorry, nothing to undo", Toast.LENGTH_SHORT).show();
 			}
@@ -257,12 +259,14 @@ public class Britely extends Activity {
 		int rows;
 		int cols;
 		boolean power = true;
+		List<Integer> previouslyTargeted;
 		Drawable glow;
 
 		public BriteView(Context context) {
 			super(context);
 
 			board = new ArrayList<PegView>();
+			previouslyTargeted = new ArrayList<Integer>();
 			lastMove[0] = -1;
 			lastMove[1] = -1;
 			setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
@@ -318,9 +322,9 @@ public class Britely extends Activity {
 			switch (event.getAction()) {
 			case MotionEvent.ACTION_MOVE: {
 				
-				if (event.getHistorySize() < 1) {
-					return false;
-				}				
+//				if (event.getHistorySize() < 1) {
+//					return false;
+//				}				
 				
 				float x = event.getX();
 				float y = event.getY();
@@ -338,10 +342,17 @@ public class Britely extends Activity {
 				}
 
 				int index = getIndex(recticleX, recticleY);
-
+				for (Integer i : previouslyTargeted) {
+					if (i != index) {
+						PegView pv = board.get(i);
+						pv.targeted = false;
+						pv.invalidate();
+					}
+				}
 				PegView p = board.get(index);
-				p.setImageResource(R.drawable.recticle);
-				// p.invalidate();
+				p.targeted = true;
+				p.invalidate();
+				previouslyTargeted.add(index);
 				break;
 			}
 			case MotionEvent.ACTION_DOWN: {
@@ -350,7 +361,6 @@ public class Britely extends Activity {
 				lastMove[0] = index;
 				lastMove[1] = p.currentColor;
 				p.currentColor = activeColor;
-				// p.invalidate();
 				break;
 			}
 			}
@@ -395,8 +405,17 @@ public class Britely extends Activity {
 				recticleX += 1;
 			}
 			int index = getIndex(recticleX, recticleY);
+			for (Integer i : previouslyTargeted) {
+				if (i != index) {
+					PegView pv = board.get(i);
+					pv.targeted = false;
+					pv.invalidate();
+				}
+			}			
 			PegView p = board.get(index);			
-			p.setImageResource(R.drawable.recticle);	
+			p.targeted = true;
+			p.invalidate();
+			previouslyTargeted.add(index);
 			return true;
 		}
 
@@ -409,21 +428,30 @@ public class Britely extends Activity {
 
 				int x = (int) (motionEvent.getX() / tileSize);
 				int y = (int) (motionEvent.getY() / tileSize);								
-
+				
 				int index = getIndex(x, y);
 				PegView p = board.get(index);
 
 				switch (motionEvent.getAction()) {
 				case MotionEvent.ACTION_MOVE: {
+					for (Integer i : previouslyTargeted) {
+						if (i != index) {
+							PegView pv = board.get(i);
+							pv.targeted = false;
+							pv.invalidate();
+						}
+					}
 					recticleX = x;
 					recticleY = y;
-					p.setImageResource(R.drawable.recticle);
+					p.targeted = true;
 					p.invalidate();
+					previouslyTargeted.add(index);
 					break;
 				}
 				case MotionEvent.ACTION_UP: {
 					lastMove[0] = index;
-					lastMove[1] = p.currentColor;					
+					lastMove[1] = p.currentColor;
+					p.targeted = false;
 					p.currentColor = activeColor;
 					p.invalidate();
 					break;
