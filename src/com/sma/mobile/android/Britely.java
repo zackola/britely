@@ -2,20 +2,25 @@ package com.sma.mobile.android;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore.Images.Media;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -42,7 +47,7 @@ public class Britely extends Activity {
 	public static int tileSize = 13;
 	public static int screenWidth;
 	public static int screenHeight;
-	
+
 	public static int[] lastMove = new int[2];
 
 	// Strings
@@ -54,6 +59,11 @@ public class Britely extends Activity {
 	public static final int BOARD_ID = 101;
 
 	private static MediaScannerConnection mediaScanner = null;
+	private static Intent captureImageIntent = null;
+	private static ContentResolver contentResolver;
+
+	// Result Ids
+	private final static int IMAGE_SELECT_CALL = 1;
 
 	BriteView briteView;
 
@@ -94,7 +104,7 @@ public class Britely extends Activity {
 						Log.d("MEDIA", "onScanCompleted()");
 					}
 				});
-
+		contentResolver = getContentResolver();
 	}
 
 	// Options Menu Stuff
@@ -102,7 +112,8 @@ public class Britely extends Activity {
 	static private final int MENU_ITEM_SAVE = 1;
 	static private final int MENU_ITEM_HELP = 2;
 	static private final int MENU_ITEM_CLEAR = 3;
-	static private final int MENU_ITEM_UNDO = 4;	
+	static private final int MENU_ITEM_UNDO = 4;
+	static private final int MENU_ITEM_LOAD = 5;
 
 	static private final int MENU_ITEM_COLORS_RED = 100;
 	static private final int MENU_ITEM_COLORS_GREEN = 101;
@@ -133,16 +144,18 @@ public class Britely extends Activity {
 		colorsMenu.add(0, MENU_ITEM_COLORS_YELLOW, 7, "Yellow");
 		colorsMenu.add(0, MENU_ITEM_COLORS_WHITE, 8, "White");
 
-
+//		MenuItem loadMenuItem = _menu.add(0, MENU_ITEM_LOAD, 0, "Load");		
+//		loadMenuItem.setIcon(android.R.drawable.ic_input_get);
+		
 		MenuItem shareMenuItem = _menu.add(0, MENU_ITEM_SAVE, 1, "Save");
 		shareMenuItem.setIcon(android.R.drawable.ic_menu_send);
 
 		MenuItem undoMenuItem = _menu.add(0, MENU_ITEM_UNDO, 2, "Undo");
-		undoMenuItem.setIcon(android.R.drawable.ic_menu_revert);		
-		
+		undoMenuItem.setIcon(android.R.drawable.ic_menu_revert);
+
 		MenuItem clearMenuItem = _menu.add(0, MENU_ITEM_CLEAR, 3, "Clear");
 		clearMenuItem.setIcon(android.R.drawable.ic_menu_delete);
-		
+
 		MenuItem helpMenuItem = _menu.add(0, MENU_ITEM_HELP, 4, "Help");
 		helpMenuItem.setIcon(android.R.drawable.ic_menu_help);
 		return true;
@@ -211,7 +224,8 @@ public class Britely extends Activity {
 				pv.currentColor = lastMove[1];
 				pv.invalidate();
 			} else {
-				Toast.makeText(this, "Sorry, nothing to undo", Toast.LENGTH_SHORT).show();
+				Toast.makeText(this, "Sorry, nothing to undo",
+						Toast.LENGTH_SHORT).show();
 			}
 			return true;
 		}
@@ -247,13 +261,48 @@ public class Britely extends Activity {
 				return false;
 			}
 		}
+		case MENU_ITEM_LOAD: {
+			captureImageIntent = new Intent("android.intent.action.GET_CONTENT");
+			captureImageIntent.setType("image/*");
+			startActivityForResult(captureImageIntent, IMAGE_SELECT_CALL);
+			return true;
+		}
 		}
 		return true;
 	}
 
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		super.onActivityResult(requestCode, resultCode, data);
+		captureImageIntent = null;
+		switch (requestCode) {
+		case IMAGE_SELECT_CALL:
+			switch (resultCode) {
+			case RESULT_OK:
+				try {
+					Uri dataUri = data.getData();
+					if (briteView.loadFile(dataUri)) {
+						Toast.makeText(this, "... loaded ...",
+								Toast.LENGTH_SHORT).show();
+					} else {
+						Toast.makeText(this,
+								"sorry but I have failed to load it",
+								Toast.LENGTH_SHORT);
+					}
+				} catch (NullPointerException e) {
+					Toast.makeText(this, "sorry but I have failed to load it",
+							Toast.LENGTH_SHORT);
+				}
+			default:
+				break;
+			}
+			break;
+		}
+	}
+
 	private static class BriteView extends LinearLayout {
 
-		public List<PegView> board;
+		List<PegView> board;
 		int recticleX = 1;
 		int recticleY = 1;
 		int rows;
@@ -261,6 +310,8 @@ public class Britely extends Activity {
 		boolean power = true;
 		List<Integer> previouslyTargeted;
 		Drawable glow;
+		public Bitmap bitmap = null;
+		private Canvas canvas = null;
 
 		public BriteView(Context context) {
 			super(context);
@@ -318,17 +369,13 @@ public class Britely extends Activity {
 		@Override
 		public boolean onTrackballEvent(MotionEvent event) {
 			super.onTrackballEvent(event);
-			
+
 			switch (event.getAction()) {
 			case MotionEvent.ACTION_MOVE: {
-				
-//				if (event.getHistorySize() < 1) {
-//					return false;
-//				}				
-				
+
 				float x = event.getX();
 				float y = event.getY();
-				
+
 				if (x < 0.0 && recticleX > 0) {
 					recticleX -= 1;
 				} else if (x > 0.0 && recticleX < screenWidth) {
@@ -375,7 +422,7 @@ public class Britely extends Activity {
 				int index = getIndex(recticleX, recticleY);
 				PegView p = board.get(index);
 				lastMove[0] = index;
-				lastMove[1] = p.currentColor;				
+				lastMove[1] = p.currentColor;
 				p.currentColor = activeColor;
 				p.invalidate();
 				return true;
@@ -411,8 +458,8 @@ public class Britely extends Activity {
 					pv.targeted = false;
 					pv.invalidate();
 				}
-			}			
-			PegView p = board.get(index);			
+			}
+			PegView p = board.get(index);
 			p.targeted = true;
 			p.invalidate();
 			previouslyTargeted.add(index);
@@ -427,9 +474,12 @@ public class Britely extends Activity {
 				}
 
 				int x = (int) (motionEvent.getX() / tileSize);
-				int y = (int) (motionEvent.getY() / tileSize);								
-				
+				int y = (int) (motionEvent.getY() / tileSize);
+
 				int index = getIndex(x, y);
+				if (index < 0 || index >= rows*cols) {
+					return false;
+				}
 				PegView p = board.get(index);
 
 				switch (motionEvent.getAction()) {
@@ -464,22 +514,20 @@ public class Britely extends Activity {
 
 		public int getQuadrant(int x, int y) {
 			int quadrant = 1;
-			if (x < screenWidth / 2) { 
+			if (x < screenWidth / 2) {
 				if (y < screenHeight / 2) {
 					quadrant = 1;
-				}
-				else {
-					quadrant = 4; 
+				} else {
+					quadrant = 4;
 				}
 			} else {
 				if (y < screenHeight / 2) {
 					quadrant = 2;
-				}
-				else {
+				} else {
 					quadrant = 3;
 				}
 			}
-			
+
 			switch (quadrant) {
 			case 1: {
 				x -= 2;
@@ -504,13 +552,45 @@ public class Britely extends Activity {
 			}
 			return quadrant;
 		}
-		
+
 		public int getIndex(int x, int y) {
 			int index = x + y * (screenWidth / tileSize);
 			return index;
 		}
-		
-	}
 
+		public boolean loadFile(Uri dataUri) {
+			Log.d(TAG, "loadBackground(): " + dataUri.toString());
+			try {
+				if (bitmap != null) {
+					bitmap.recycle();
+					bitmap = null;
+				}
+				bitmap = Media.getBitmap(contentResolver, dataUri);
+				int width = bitmap.getWidth();
+				int height = bitmap.getHeight();
+				int newHeight = 320;
+				int newWidth = 430;
+				if (width < height) {
+					Matrix matrix = new Matrix();
+					matrix.postRotate(90);
+					matrix.postScale(newWidth/ width, newHeight/height);
+					bitmap = Bitmap.createBitmap(bitmap, 0, 0,
+	                          width, height, matrix, true);
+					
+				}
+				for (int y = tileSize / 2; y < newHeight; y += tileSize) {
+					for (int x = tileSize / 2; x < newWidth; x += tileSize) {
+						int pixelAt = bitmap.getPixel(x, y);
+						Log.i(TAG, String.format("pixelAt %s", Integer.toHexString(pixelAt)));
+					}
+				}
+				return true;
+			} catch (IOException e) {
+				return false;
+			}
+
+		}
+
+	}
 
 }
