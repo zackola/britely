@@ -144,9 +144,9 @@ public class Britely extends Activity {
 		colorsMenu.add(0, MENU_ITEM_COLORS_YELLOW, 7, "Yellow");
 		colorsMenu.add(0, MENU_ITEM_COLORS_WHITE, 8, "White");
 
-//		MenuItem loadMenuItem = _menu.add(0, MENU_ITEM_LOAD, 0, "Load");		
-//		loadMenuItem.setIcon(android.R.drawable.ic_input_get);
-		
+		MenuItem loadMenuItem = _menu.add(0, MENU_ITEM_LOAD, 0, "Load");
+		loadMenuItem.setIcon(android.R.drawable.ic_input_get);
+
 		MenuItem shareMenuItem = _menu.add(0, MENU_ITEM_SAVE, 1, "Save");
 		shareMenuItem.setIcon(android.R.drawable.ic_menu_send);
 
@@ -477,7 +477,7 @@ public class Britely extends Activity {
 				int y = (int) (motionEvent.getY() / tileSize);
 
 				int index = getIndex(x, y);
-				if (index < 0 || index >= rows*cols) {
+				if (index < 0 || index >= rows * cols) {
 					return false;
 				}
 				PegView p = board.get(index);
@@ -573,15 +573,58 @@ public class Britely extends Activity {
 				if (width < height) {
 					Matrix matrix = new Matrix();
 					matrix.postRotate(90);
-					matrix.postScale(newWidth/ width, newHeight/height);
-					bitmap = Bitmap.createBitmap(bitmap, 0, 0,
-	                          width, height, matrix, true);
-					
+					matrix.postScale(newWidth / width, newHeight / height);
+					bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
+							matrix, true);
+
 				}
-				for (int y = tileSize / 2; y < newHeight; y += tileSize) {
-					for (int x = tileSize / 2; x < newWidth; x += tileSize) {
-						int pixelAt = bitmap.getPixel(x, y);
-						Log.i(TAG, String.format("pixelAt %s", Integer.toHexString(pixelAt)));
+
+				for (int y = 0; y < rows; y++) {
+
+					for (int x = 0; x < cols; x++) {
+
+						int offset = 6;
+						if (y % 2 == 1)
+							offset = 12;
+
+						int pixel = bitmap.getPixel(x * tileSize + offset, y
+								* tileSize + 3);
+						int r, g, b = 0;
+						r = Color.red(pixel);
+						g = Color.green(pixel);
+						b = Color.blue(pixel);
+						int discoveredColor = R.drawable.empty;
+
+						if (r == 41 && g == 40 && b == 33)
+							discoveredColor = R.drawable.empty;
+						if (r == 231 && g == 32 && b == 33)
+							discoveredColor = R.drawable.red;
+						if (r == 33 && g == 231 && b == 33)
+							discoveredColor = R.drawable.green;
+						if (r == 33 && g == 150 && b == 231)
+							discoveredColor = R.drawable.blue;
+						if (r == 231 && g == 32 && b == 214)
+							discoveredColor = R.drawable.pink;
+						if (r == 156 && g == 32 && b == 231)
+							discoveredColor = R.drawable.violet;
+						if (r == 231 && g == 162 && b == 33)
+							discoveredColor = R.drawable.orange;
+						if (r == 231 && g == 223 && b == 33)
+							discoveredColor = R.drawable.yellow;
+						if (r == 239 && g == 239 && b == 239)
+							discoveredColor = R.drawable.white;
+
+						PegView p = board.get(getIndex(x, y));
+						p.currentColor = discoveredColor;
+						p.invalidate();
+
+						// Log.i(TAG, String.format(
+						// "offset:%d x:%dy:%d index:%d pixelAt r:%dg:%db:%d:a:%d"
+						// , offset,
+						// x * tileSize + offset, y * tileSize + 3, getIndex(x,
+						// y),
+						// Color.red(pixel), Color.green(pixel), Color
+						// .blue(pixel), Color.alpha(pixel)));
 					}
 				}
 				return true;
