@@ -3,4 +3,5 @@
     <string name="hello">Hello World, Britely</string>
     <string name="app_name">Britely</string>
 
+<string name="help">Menu for options. Trackball to move and put. Keyboard too: 1 (up) A (down) Q (left) W (right) and Spacebar or Camera to put.</string>
 </resources>

@@ -16,6 +16,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Bitmap.Config;
 import android.graphics.drawable.Drawable;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -31,10 +33,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-import android.widget.TableLayout;
-import android.widget.TableRow;
 import android.widget.Toast;
-import android.widget.ImageView.ScaleType;
 
 public class Britely extends Activity {
 
@@ -49,9 +48,6 @@ public class Britely extends Activity {
 	public static int screenHeight;
 
 	public static int[] lastMove = new int[2];
-
-	// Strings
-	public static final String HELP_MESSAGE = "Menu for options. Trackball to move and put. Keyboard too: 1 (up) A (down) Q (left) W (right) and Spacebar to put.";
 
 	// View Ids
 	public static final int BRITE_VIEW_ID = 1;
@@ -70,9 +66,8 @@ public class Britely extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		Log.i(TAG, "onStart");
 		mediaScanner.connect();
-		Toast.makeText(this, HELP_MESSAGE, Toast.LENGTH_LONG).show();
+		Toast.makeText(this, R.string.help, Toast.LENGTH_LONG).show();
 	}
 
 	@Override
@@ -90,8 +85,8 @@ public class Britely extends Activity {
 		briteView = new BriteView(this);
 		briteView.setFocusable(true);
 		briteView.setFocusableInTouchMode(true);
-		briteView.setWillNotDraw(false);
 		briteView.setId(BRITE_VIEW_ID);
+		briteView.setWillNotDraw(false);
 		setContentView(briteView);
 
 		mediaScanner = new MediaScannerConnection(this,
@@ -108,7 +103,7 @@ public class Britely extends Activity {
 	}
 
 	// Options Menu Stuff
-	static private final int MENU_ITEM_PALLETE = 0;
+	static private final int MENU_ITEM_PALETTE = 0;
 	static private final int MENU_ITEM_SAVE = 1;
 	static private final int MENU_ITEM_HELP = 2;
 	static private final int MENU_ITEM_CLEAR = 3;
@@ -130,7 +125,7 @@ public class Britely extends Activity {
 		super.onCreateOptionsMenu(_menu);
 
 		SubMenu colorsMenu = _menu
-				.addSubMenu(0, MENU_ITEM_PALLETE, 1, "Colors");
+				.addSubMenu(0, MENU_ITEM_PALETTE, 1, "Colors");
 		colorsMenu.setHeaderIcon(android.R.drawable.ic_menu_slideshow);
 		colorsMenu.setIcon(android.R.drawable.ic_menu_slideshow);
 
@@ -208,21 +203,21 @@ public class Britely extends Activity {
 			return true;
 		}
 		case MENU_ITEM_HELP: {
-			Toast.makeText(this, HELP_MESSAGE, Toast.LENGTH_LONG).show();
+			Toast.makeText(this, R.string.help, Toast.LENGTH_LONG).show();
 			return true;
 		}
 		case MENU_ITEM_CLEAR: {
-			for (PegView p : briteView.board) {
+			for (Peg p : briteView.board) {
 				p.currentColor = R.drawable.empty;
-				p.invalidate();
 			}
+			briteView.invalidate();
 			return true;
 		}
 		case MENU_ITEM_UNDO: {
 			if (lastMove[0] >= 0 && lastMove[1] >= 0) {
-				PegView pv = briteView.board.get(lastMove[0]);
-				pv.currentColor = lastMove[1];
-				pv.invalidate();
+				Peg p = briteView.board.get(lastMove[0]);
+				p.currentColor = lastMove[1];
+				briteView.invalidate();
 			} else {
 				Toast.makeText(this, "Sorry, nothing to undo",
 						Toast.LENGTH_SHORT).show();
@@ -302,66 +297,53 @@ public class Britely extends Activity {
 
 	private static class BriteView extends LinearLayout {
 
-		List<PegView> board;
+		List<Peg> board;
+		List<Peg> previouslyTargeted;
 		int recticleX = 1;
 		int recticleY = 1;
 		int rows;
 		int cols;
-		boolean power = true;
-		List<Integer> previouslyTargeted;
-		Drawable glow;
-		public Bitmap bitmap = null;
-		private Canvas canvas = null;
+		public Paint paint;
+		public Matrix matrix;
+		public Bitmap bitmapSave = null;
+		Bitmap bitmap = null;
+		public Drawable palette[];
+		public Drawable recticle;
 
 		public BriteView(Context context) {
 			super(context);
 
-			board = new ArrayList<PegView>();
-			previouslyTargeted = new ArrayList<Integer>();
+			bitmap = Bitmap.createBitmap(screenWidth, screenHeight,
+					Config.ARGB_8888);
+			paint = new Paint();
+			matrix = new Matrix();
+			palette = new Drawable[9];
+			recticle = getResources().getDrawable(R.drawable.recticle);
+			palette[0] = getResources().getDrawable(R.drawable.empty);
+			palette[1] = getResources().getDrawable(R.drawable.red);
+			palette[2] = getResources().getDrawable(R.drawable.green);
+			palette[3] = getResources().getDrawable(R.drawable.blue);
+			palette[4] = getResources().getDrawable(R.drawable.pink);
+			palette[5] = getResources().getDrawable(R.drawable.violet);
+			palette[6] = getResources().getDrawable(R.drawable.orange);
+			palette[7] = getResources().getDrawable(R.drawable.yellow);
+			palette[8] = getResources().getDrawable(R.drawable.white);
+
 			lastMove[0] = -1;
 			lastMove[1] = -1;
 			setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
 					LayoutParams.FILL_PARENT));
 			setOrientation(VERTICAL);
-			setId(BOARD_ID);
-			TableLayout tableLayout = new TableLayout(this.getContext());
-			LayoutParams lp = new LayoutParams(
-					TableLayout.LayoutParams.FILL_PARENT,
-					TableLayout.LayoutParams.FILL_PARENT);
-			tableLayout.setId(MY_TABLE_LAYOUT_ID);
-			tableLayout.setLayoutParams(lp);
-			tableLayout.setBackgroundColor(Color.BLACK);
-			addView(tableLayout);
-
 			rows = screenHeight / tileSize;
 			cols = screenWidth / tileSize;
+			board = new ArrayList<Peg>();
+			previouslyTargeted = new ArrayList<Peg>();
 
 			for (int y = 0; y < rows; y++) {
-
-				TableRow tr = new TableRow(this.getContext());
-				tr.setId(1000 + y);
-
 				for (int x = 0; x < cols; x++) {
-
-					int index = x + y * cols;
-					PegView p = new PegView(this.getContext());
-					p.setImageResource(R.drawable.empty);
-					p.setId(index);
-					p.setAdjustViewBounds(true);
-					p.setMaxHeight(tileSize);
-					p.setMaxWidth(tileSize);
-					p.setScaleType(ScaleType.FIT_CENTER);
-					TableRow.LayoutParams lp1 = new TableRow.LayoutParams();
-					lp1.width = LayoutParams.WRAP_CONTENT;
-					lp1.height = LayoutParams.WRAP_CONTENT;
-					if (y % 2 == 1) {
-						lp1.setMargins(0, 0, -tileSize, 0);
-					}
-					p.setLayoutParams(lp1);
-					tr.addView(p, lp1);
-					board.add(index, p);
+					int index = getIndex(x, y);
+					board.add(index, new Peg());
 				}
-				tableLayout.addView(tr, new TableLayout.LayoutParams());
 			}
 			setOnTouchListener(touchListener);
 		}
@@ -389,22 +371,19 @@ public class Britely extends Activity {
 				}
 
 				int index = getIndex(recticleX, recticleY);
-				for (Integer i : previouslyTargeted) {
-					if (i != index) {
-						PegView pv = board.get(i);
-						pv.targeted = false;
-						pv.invalidate();
-					}
+				for (Peg p : previouslyTargeted) {
+					p.targeted = false;
 				}
-				PegView p = board.get(index);
+				previouslyTargeted.clear();
+				Peg p = board.get(index);
 				p.targeted = true;
-				p.invalidate();
-				previouslyTargeted.add(index);
+				previouslyTargeted.add(p);
+				invalidate();
 				break;
 			}
 			case MotionEvent.ACTION_DOWN: {
 				int index = getIndex(recticleX, recticleY);
-				PegView p = board.get(index);
+				Peg p = board.get(index);
 				lastMove[0] = index;
 				lastMove[1] = p.currentColor;
 				p.currentColor = activeColor;
@@ -418,13 +397,14 @@ public class Britely extends Activity {
 		public boolean onKeyUp(int keyCode, KeyEvent event) {
 			super.onKeyUp(keyCode, event);
 
-			if (keyCode == KeyEvent.KEYCODE_SPACE) {
+			if (keyCode == KeyEvent.KEYCODE_SPACE
+					|| keyCode == KeyEvent.KEYCODE_CAMERA) {
 				int index = getIndex(recticleX, recticleY);
-				PegView p = board.get(index);
+				Peg p = board.get(index);
 				lastMove[0] = index;
 				lastMove[1] = p.currentColor;
 				p.currentColor = activeColor;
-				p.invalidate();
+				invalidate();
 				return true;
 			}
 			return false;
@@ -452,17 +432,15 @@ public class Britely extends Activity {
 				recticleX += 1;
 			}
 			int index = getIndex(recticleX, recticleY);
-			for (Integer i : previouslyTargeted) {
-				if (i != index) {
-					PegView pv = board.get(i);
-					pv.targeted = false;
-					pv.invalidate();
-				}
+
+			for (Peg p : previouslyTargeted) {
+				p.targeted = false;
 			}
-			PegView p = board.get(index);
+			previouslyTargeted.clear();
+			Peg p = board.get(index);
 			p.targeted = true;
-			p.invalidate();
-			previouslyTargeted.add(index);
+			previouslyTargeted.add(p);
+			invalidate();
 			return true;
 		}
 
@@ -480,22 +458,19 @@ public class Britely extends Activity {
 				if (index < 0 || index >= rows * cols) {
 					return false;
 				}
-				PegView p = board.get(index);
+				Peg p = board.get(index);
 
 				switch (motionEvent.getAction()) {
 				case MotionEvent.ACTION_MOVE: {
-					for (Integer i : previouslyTargeted) {
-						if (i != index) {
-							PegView pv = board.get(i);
-							pv.targeted = false;
-							pv.invalidate();
-						}
-					}
 					recticleX = x;
 					recticleY = y;
+					for (Peg _p : previouslyTargeted) {
+						_p.targeted = false;
+					}
+					previouslyTargeted.clear();
 					p.targeted = true;
-					p.invalidate();
-					previouslyTargeted.add(index);
+					previouslyTargeted.add(p);
+					invalidate();
 					break;
 				}
 				case MotionEvent.ACTION_UP: {
@@ -503,7 +478,7 @@ public class Britely extends Activity {
 					lastMove[1] = p.currentColor;
 					p.targeted = false;
 					p.currentColor = activeColor;
-					p.invalidate();
+					invalidate();
 					break;
 				}
 				}
@@ -554,28 +529,27 @@ public class Britely extends Activity {
 		}
 
 		public int getIndex(int x, int y) {
-			int index = x + y * (screenWidth / tileSize);
-			return index;
+			return x + y * (screenWidth / tileSize);
 		}
 
 		public boolean loadFile(Uri dataUri) {
-			Log.d(TAG, "loadBackground(): " + dataUri.toString());
+			// Log.d(TAG, "loadBackground(): " + dataUri.toString());
 			try {
-				if (bitmap != null) {
-					bitmap.recycle();
-					bitmap = null;
+				if (bitmapSave != null) {
+					bitmapSave.recycle();
+					bitmapSave = null;
 				}
-				bitmap = Media.getBitmap(contentResolver, dataUri);
-				int width = bitmap.getWidth();
-				int height = bitmap.getHeight();
+				bitmapSave = Media.getBitmap(contentResolver, dataUri);
+				int width = bitmapSave.getWidth();
+				int height = bitmapSave.getHeight();
 				int newHeight = 320;
 				int newWidth = 430;
 				if (width < height) {
 					Matrix matrix = new Matrix();
 					matrix.postRotate(90);
 					matrix.postScale(newWidth / width, newHeight / height);
-					bitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
-							matrix, true);
+					bitmapSave = Bitmap.createBitmap(bitmapSave, 0, 0, width,
+							height, matrix, true);
 
 				}
 
@@ -587,8 +561,8 @@ public class Britely extends Activity {
 						if (y % 2 == 1)
 							offset = 12;
 
-						int pixel = bitmap.getPixel(x * tileSize + offset, y
-								* tileSize + 3);
+						int pixel = bitmapSave.getPixel(x * tileSize + offset,
+								y * tileSize + 3);
 						int r, g, b = 0;
 						r = Color.red(pixel);
 						g = Color.green(pixel);
@@ -614,10 +588,9 @@ public class Britely extends Activity {
 						if (r == 239 && g == 239 && b == 239)
 							discoveredColor = R.drawable.white;
 
-						PegView p = board.get(getIndex(x, y));
+						Peg p = board.get(getIndex(x, y));
 						p.currentColor = discoveredColor;
-						p.invalidate();
-
+						invalidate();
 						// Log.i(TAG, String.format(
 						// "offset:%d x:%dy:%d index:%d pixelAt r:%dg:%db:%d:a:%d"
 						// , offset,
@@ -631,6 +604,75 @@ public class Britely extends Activity {
 			} catch (IOException e) {
 				return false;
 			}
+
+		}
+
+		@Override
+		protected void onDraw(Canvas canvas) {
+			super.onDraw(canvas);
+			Canvas forDrawing = new Canvas(bitmap);
+			forDrawing.drawColor(Color.BLACK);
+			for (int y = 0; y < rows; y++) {
+				for (int x = 0; x < cols; x++) {
+					int index = getIndex(x, y);
+					int offset = 0;
+					if (y % 2 == 1) {
+						offset = tileSize / 2;
+					}
+					Peg peg = board.get(index);
+					Drawable pegDrawable = null;
+					switch (peg.currentColor) {
+					case R.drawable.empty: {
+						pegDrawable = palette[0];
+						break;
+					}
+					case R.drawable.red: {
+						pegDrawable = palette[1];
+						break;
+					}
+					case R.drawable.green: {
+						pegDrawable = palette[2];
+						break;
+					}
+					case R.drawable.blue: {
+						pegDrawable = palette[3];
+						break;
+					}
+					case R.drawable.pink: {
+						pegDrawable = palette[4];
+						break;
+					}
+					case R.drawable.violet: {
+						pegDrawable = palette[5];
+						break;
+					}
+					case R.drawable.orange: {
+						pegDrawable = palette[6];
+						break;
+					}
+					case R.drawable.yellow: {
+						pegDrawable = palette[7];
+						break;
+					}
+					case R.drawable.white: {
+						pegDrawable = palette[8];
+						break;
+					}
+					}
+					if (peg.targeted) {
+						pegDrawable = recticle;
+					}
+					int realX = x * tileSize + offset;
+					int realY = y * tileSize;
+					pegDrawable.setBounds(realX, realY, realX + tileSize, realY
+							+ tileSize);
+					pegDrawable.draw(forDrawing);
+				}
+			}
+			canvas.drawBitmap(bitmap, matrix, paint);
+		}
+
+		void clearTargets() {
 
 		}
 
