@@ -319,6 +319,7 @@ public class Britely extends Activity {
 			matrix = new Matrix();
 			palette = new Drawable[9];
 			recticle = getResources().getDrawable(R.drawable.recticle);
+
 			palette[0] = getResources().getDrawable(R.drawable.empty);
 			palette[1] = getResources().getDrawable(R.drawable.red);
 			palette[2] = getResources().getDrawable(R.drawable.green);
@@ -591,13 +592,13 @@ public class Britely extends Activity {
 						Peg p = board.get(getIndex(x, y));
 						p.currentColor = discoveredColor;
 						invalidate();
-						// Log.i(TAG, String.format(
-						// "offset:%d x:%dy:%d index:%d pixelAt r:%dg:%db:%d:a:%d"
-						// , offset,
-						// x * tileSize + offset, y * tileSize + 3, getIndex(x,
-						// y),
-						// Color.red(pixel), Color.green(pixel), Color
-						// .blue(pixel), Color.alpha(pixel)));
+//						 Log.i(TAG, String.format(
+//						 "offset:%d x:%dy:%d index:%d pixelAt r:%dg:%db:%d:a:%d"
+//						 , offset,
+//						 x * tileSize + offset, y * tileSize + 3, getIndex(x,
+//						 y),
+//						 Color.red(pixel), Color.green(pixel), Color
+//						 .blue(pixel), Color.alpha(pixel)));
 					}
 				}
 				return true;
@@ -621,47 +622,51 @@ public class Britely extends Activity {
 					}
 					Peg peg = board.get(index);
 					Drawable pegDrawable = null;
+					int drawableIndex = 0;
 					switch (peg.currentColor) {
 					case R.drawable.empty: {
-						pegDrawable = palette[0];
+						drawableIndex = 0;
 						break;
 					}
 					case R.drawable.red: {
-						pegDrawable = palette[1];
+						drawableIndex = 1;
 						break;
 					}
 					case R.drawable.green: {
-						pegDrawable = palette[2];
+						drawableIndex = 2;
 						break;
 					}
 					case R.drawable.blue: {
-						pegDrawable = palette[3];
+						drawableIndex = 3;
 						break;
 					}
 					case R.drawable.pink: {
-						pegDrawable = palette[4];
+						drawableIndex = 4;
 						break;
 					}
 					case R.drawable.violet: {
-						pegDrawable = palette[5];
+						drawableIndex = 5;
 						break;
 					}
 					case R.drawable.orange: {
-						pegDrawable = palette[6];
+						drawableIndex = 6;
 						break;
 					}
 					case R.drawable.yellow: {
-						pegDrawable = palette[7];
+						drawableIndex = 7;
 						break;
 					}
 					case R.drawable.white: {
-						pegDrawable = palette[8];
+						drawableIndex = 8;
 						break;
 					}
-					}
-					if (peg.targeted) {
+					}								
+					if (!peg.targeted) {
+						pegDrawable = palette[drawableIndex];
+					} else {
 						pegDrawable = recticle;
 					}
+
 					int realX = x * tileSize + offset;
 					int realY = y * tileSize;
 					pegDrawable.setBounds(realX, realY, realX + tileSize, realY
