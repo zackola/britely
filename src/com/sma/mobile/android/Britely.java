@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import android.app.Activity;
@@ -307,7 +308,8 @@ public class Britely extends Activity {
 		public Matrix matrix;
 		public Bitmap bitmapSave = null;
 		Bitmap bitmap = null;
-		public Drawable palette[];
+		public HashMap<Integer,Drawable> palette;
+		public HashMap<Integer,Drawable> recticles;		
 		public Drawable recticle;
 
 		public BriteView(Context context) {
@@ -317,18 +319,28 @@ public class Britely extends Activity {
 					Config.ARGB_8888);
 			paint = new Paint();
 			matrix = new Matrix();
-			palette = new Drawable[9];
-			recticle = getResources().getDrawable(R.drawable.recticle);
+			palette = new HashMap<Integer, Drawable>();
+			recticles = new HashMap<Integer, Drawable>();
 
-			palette[0] = getResources().getDrawable(R.drawable.empty);
-			palette[1] = getResources().getDrawable(R.drawable.red);
-			palette[2] = getResources().getDrawable(R.drawable.green);
-			palette[3] = getResources().getDrawable(R.drawable.blue);
-			palette[4] = getResources().getDrawable(R.drawable.pink);
-			palette[5] = getResources().getDrawable(R.drawable.violet);
-			palette[6] = getResources().getDrawable(R.drawable.orange);
-			palette[7] = getResources().getDrawable(R.drawable.yellow);
-			palette[8] = getResources().getDrawable(R.drawable.white);
+			recticles.put(R.drawable.empty, getResources().getDrawable(R.drawable.recticle));
+			recticles.put(R.drawable.red, getResources().getDrawable(R.drawable.recticle_red));
+			recticles.put(R.drawable.green, getResources().getDrawable(R.drawable.recticle_green));
+			recticles.put(R.drawable.blue, getResources().getDrawable(R.drawable.recticle_blue));
+			recticles.put(R.drawable.pink, getResources().getDrawable(R.drawable.recticle_pink));
+			recticles.put(R.drawable.violet, getResources().getDrawable(R.drawable.recticle_violet));
+			recticles.put(R.drawable.orange, getResources().getDrawable(R.drawable.recticle_orange));
+			recticles.put(R.drawable.yellow, getResources().getDrawable(R.drawable.recticle_yellow));
+			recticles.put(R.drawable.white, getResources().getDrawable(R.drawable.recticle_white));
+			
+			palette.put(R.drawable.empty, getResources().getDrawable(R.drawable.empty));
+			palette.put(R.drawable.red, getResources().getDrawable(R.drawable.red));
+			palette.put(R.drawable.green, getResources().getDrawable(R.drawable.green));
+			palette.put(R.drawable.blue, getResources().getDrawable(R.drawable.blue));
+			palette.put(R.drawable.pink, getResources().getDrawable(R.drawable.pink));
+			palette.put(R.drawable.violet, getResources().getDrawable(R.drawable.violet));
+			palette.put(R.drawable.orange, getResources().getDrawable(R.drawable.orange));
+			palette.put(R.drawable.yellow, getResources().getDrawable(R.drawable.yellow));
+			palette.put(R.drawable.white, getResources().getDrawable(R.drawable.white));
 
 			lastMove[0] = -1;
 			lastMove[1] = -1;
@@ -622,51 +634,11 @@ public class Britely extends Activity {
 					}
 					Peg peg = board.get(index);
 					Drawable pegDrawable = null;
-					int drawableIndex = 0;
-					switch (peg.currentColor) {
-					case R.drawable.empty: {
-						drawableIndex = 0;
-						break;
-					}
-					case R.drawable.red: {
-						drawableIndex = 1;
-						break;
-					}
-					case R.drawable.green: {
-						drawableIndex = 2;
-						break;
-					}
-					case R.drawable.blue: {
-						drawableIndex = 3;
-						break;
-					}
-					case R.drawable.pink: {
-						drawableIndex = 4;
-						break;
-					}
-					case R.drawable.violet: {
-						drawableIndex = 5;
-						break;
-					}
-					case R.drawable.orange: {
-						drawableIndex = 6;
-						break;
-					}
-					case R.drawable.yellow: {
-						drawableIndex = 7;
-						break;
-					}
-					case R.drawable.white: {
-						drawableIndex = 8;
-						break;
-					}
-					}								
 					if (!peg.targeted) {
-						pegDrawable = palette[drawableIndex];
+						pegDrawable = palette.get(peg.currentColor);
 					} else {
-						pegDrawable = recticle;
+						pegDrawable = recticles.get(activeColor);
 					}
-
 					int realX = x * tileSize + offset;
 					int realY = y * tileSize;
 					pegDrawable.setBounds(realX, realY, realX + tileSize, realY
