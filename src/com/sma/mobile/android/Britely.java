@@ -373,13 +373,13 @@ public class Britely extends Activity {
 
 				if (x < 0.0 && recticleX > 0) {
 					recticleX -= 1;
-				} else if (x > 0.0 && recticleX < screenWidth) {
+				} else if (x > 0.0 && recticleX < cols-1) {
 					recticleX += 1;
 				}
 
 				if (y < 0.0 && recticleY > 0) {
 					recticleY -= 1;
-				} else if (y > 0.0 && recticleY < screenHeight) {
+				} else if (y > 0.0 && recticleY < rows-1) {
 					recticleY += 1;
 				}
 
