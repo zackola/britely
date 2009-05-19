@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -59,6 +60,8 @@ public class Britely extends Activity {
 	private static Intent captureImageIntent = null;
 	private static ContentResolver contentResolver;
 
+	ProgressDialog progressDialog;
+	
 	// Result Ids
 	private final static int IMAGE_SELECT_CALL = 1;
 
@@ -276,7 +279,9 @@ public class Britely extends Activity {
 			switch (resultCode) {
 			case RESULT_OK:
 				try {
+					
 					Uri dataUri = data.getData();
+					
 					if (briteView.loadFile(dataUri)) {
 						Toast.makeText(this, "... loaded ...",
 								Toast.LENGTH_SHORT).show();
@@ -284,7 +289,8 @@ public class Britely extends Activity {
 						Toast.makeText(this,
 								"sorry but I have failed to load it",
 								Toast.LENGTH_SHORT);
-					}
+					}				
+					
 				} catch (NullPointerException e) {
 					Toast.makeText(this, "sorry but I have failed to load it",
 							Toast.LENGTH_SHORT);
@@ -546,78 +552,112 @@ public class Britely extends Activity {
 		}
 
 		public boolean loadFile(Uri dataUri) {
-			// Log.d(TAG, "loadBackground(): " + dataUri.toString());
 			try {
+		        Bitmap resizedBitmap;
+		        
 				if (bitmapSave != null) {
 					bitmapSave.recycle();
 					bitmapSave = null;
 				}
-				bitmapSave = Media.getBitmap(contentResolver, dataUri);
-				int width = bitmapSave.getWidth();
-				int height = bitmapSave.getHeight();
-				int newHeight = 320;
-				int newWidth = 430;
-				if (width < height) {
-					Matrix matrix = new Matrix();
-					matrix.postRotate(90);
-					matrix.postScale(newWidth / width, newHeight / height);
-					bitmapSave = Bitmap.createBitmap(bitmapSave, 0, 0, width,
-							height, matrix, true);
+				bitmapSave 	= Media.getBitmap(contentResolver, dataUri);
 
+				int width 	= bitmapSave.getWidth();
+				int height 	= bitmapSave.getHeight();
+
+				int newWidth  = 480;
+				int newHeight = 320;
+
+		        float scaleWidth = ((float) newWidth) / width;
+		        float scaleHeight = ((float) newHeight) / height; 
+		        	        
+				Matrix matrix = new Matrix();
+				matrix.reset();
+
+				if (width < height) {
+					matrix.postRotate(90);
+			        scaleWidth = ((float) newWidth) / height;
+			        scaleHeight = ((float) newHeight) / width;			
 				}
+				
+				matrix.postScale(scaleWidth, scaleHeight);
+					
+				resizedBitmap  = Bitmap.createBitmap(bitmapSave, 0, 0, width,
+						height, matrix, true);
 
 				for (int y = 0; y < rows; y++) {
-
 					for (int x = 0; x < cols; x++) {
 
-						int offset = 6;
-						if (y % 2 == 1)
-							offset = 12;
-
-						int pixel = bitmapSave.getPixel(x * tileSize + offset,
-								y * tileSize + 3);
-						int r, g, b = 0;
-						r = Color.red(pixel);
-						g = Color.green(pixel);
-						b = Color.blue(pixel);
-						int discoveredColor = R.drawable.empty;
-
-						if (r == 41 && g == 40 && b == 33)
-							discoveredColor = R.drawable.empty;
-						if (r == 231 && g == 32 && b == 33)
-							discoveredColor = R.drawable.red;
-						if (r == 33 && g == 231 && b == 33)
-							discoveredColor = R.drawable.green;
-						if (r == 33 && g == 150 && b == 231)
-							discoveredColor = R.drawable.blue;
-						if (r == 231 && g == 32 && b == 214)
-							discoveredColor = R.drawable.pink;
-						if (r == 156 && g == 32 && b == 231)
-							discoveredColor = R.drawable.violet;
-						if (r == 231 && g == 162 && b == 33)
-							discoveredColor = R.drawable.orange;
-						if (r == 231 && g == 223 && b == 33)
-							discoveredColor = R.drawable.yellow;
-						if (r == 239 && g == 239 && b == 239)
-							discoveredColor = R.drawable.white;
-
-						Peg p = board.get(getIndex(x, y));
-						p.currentColor = discoveredColor;
-						invalidate();
-//						 Log.i(TAG, String.format(
-//						 "offset:%d x:%dy:%d index:%d pixelAt r:%dg:%db:%d:a:%d"
-//						 , offset,
-//						 x * tileSize + offset, y * tileSize + 3, getIndex(x,
-//						 y),
-//						 Color.red(pixel), Color.green(pixel), Color
-//						 .blue(pixel), Color.alpha(pixel)));
+						int discoveredColor;
+						int offset = (y % 2 == 1) ? 6 : 0;
+					
+						ArrayList<Integer> blockOfPixels = new ArrayList<Integer>(tileSize * tileSize);
+						
+						int startX 	= (x * tileSize) + offset;
+						int startY 	= y * tileSize;
+						int endX 	= startX + tileSize;
+						int endY 	= startY + tileSize;
+						
+						for (int i = startY; i < endY; i++) {							
+							for (int j = startX; j < endX; j++) {
+								blockOfPixels.add(resizedBitmap.getPixel(j, i));
+							}
+						}						
+						discoveredColor = closestTo(blockOfPixels);												
+						Peg p 			= board.get(getIndex(x, y));
+						p.currentColor 	= discoveredColor;
+						this.invalidate();
 					}
 				}
-				return true;
+				invalidate();
 			} catch (IOException e) {
-				return false;
-			}
 
+			}			
+			return true;
+		}
+		
+		public int closestTo(ArrayList<Integer> patch) {
+			int discoveredColor = R.drawable.empty;
+			int rValues = 0;
+			int gValues = 0;
+			int bValues = 0;			
+			int rAvg, gAvg, bAvg;
+			
+			for (int pixel : patch) {
+				rValues += Color.red(pixel);
+				gValues += Color.green(pixel);
+				bValues += Color.blue(pixel);				
+			}
+			
+			rAvg = rValues / patch.size();
+			gAvg = gValues / patch.size();
+			bAvg = bValues / patch.size();
+			
+			int hsv[];
+			hsv = rgb2hsv(rAvg, gAvg, bAvg);
+					
+			// hues are easy for this
+			if (hsv[0] >= 0 && hsv[0] < 15)
+				discoveredColor = R.drawable.red;
+			if (hsv[0] >= 15 && hsv[0] < 45)
+				discoveredColor = R.drawable.orange;
+			if (hsv[0] >= 45 && hsv[0] < 75)
+				discoveredColor = R.drawable.yellow;			
+			if (hsv[0] >= 75 && hsv[0] < 160)
+				discoveredColor = R.drawable.green;
+			if (hsv[0] >= 160  && hsv[0] < 240)			
+				discoveredColor = R.drawable.blue;
+			if (hsv[0] >= 240  && hsv[0] < 300)		
+				discoveredColor = R.drawable.violet;
+			if (hsv[0] >= 300)
+				discoveredColor = R.drawable.pink;	
+			
+			// stick to rgb for empty and white
+			if (rAvg >= 135 && gAvg >= 135 && bAvg >= 135)
+				discoveredColor = R.drawable.white;					
+			if (rAvg < 16 && gAvg < 16 && bAvg < 16)
+				discoveredColor = R.drawable.empty;
+			
+			return discoveredColor;
 		}
 
 		@Override
@@ -652,7 +692,49 @@ public class Britely extends Activity {
 		void clearTargets() {
 
 		}
+		
 
+		public int[] rgb2hsv(int r, int g, int b) {
+			
+			int [] hsv = new int[3];
+			float temp = r + g + b / 3;
+			double xa = (g - r) / Math.sqrt(2);
+			double ya = (b + b - r - g) / Math.sqrt(6);
+			hsv[0] = (int) (argument(xa, ya) * 180 / Math.PI + 150);
+			hsv[1] = (int) (argument(temp, module(r - temp, g - temp, b - temp)) * 100 / Math.atan(Math.sqrt(6)));
+			hsv[2] = (int) (temp / 2.55);
+			
+			if (hsv[1] == 0 || hsv[2] == 0)
+				hsv[0] = 0;
+			if (hsv[0] < 0)
+				hsv[0] += 360;
+			if (hsv[0] >= 360)
+				hsv[0] -= 360;			
+			return hsv;
+		}
+		
+		
+		public double argument(double xa, double ya) {
+			if (xa == 0 && ya == 0)
+				return 0;
+			if (xa == 0 && ya >= 0)
+				return Math.PI / 2;
+			if (ya == 0 && xa < 0)
+				return Math.PI;
+			if (xa ==0 && ya < 0)
+				return -Math.PI / 2;
+			if (xa > 0)
+				return Math.atan(ya/xa);
+			if (xa < 0 && ya >= 0)
+				return Math.PI - Math.atan(-ya/xa);
+			if (xa < 0 && ya < 0)
+				return -Math.PI + Math.atan(-ya/-xa);
+			return 0;
+		}
+		
+		public double module(double x, double y, double z) {
+			return Math.sqrt(x*x + y*y + z*z);
+		}
 	}
 
 }

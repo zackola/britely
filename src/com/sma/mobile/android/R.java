@@ -16,21 +16,22 @@ public final class R {
         public static final int glow=0x7f020002;
         public static final int green=0x7f020003;
         public static final int icon=0x7f020004;
-        public static final int orange=0x7f020005;
-        public static final int pink=0x7f020006;
-        public static final int recticle=0x7f020007;
-        public static final int recticle_blue=0x7f020008;
-        public static final int recticle_green=0x7f020009;
-        public static final int recticle_orange=0x7f02000a;
-        public static final int recticle_pink=0x7f02000b;
-        public static final int recticle_red=0x7f02000c;
-        public static final int recticle_violet=0x7f02000d;
-        public static final int recticle_white=0x7f02000e;
-        public static final int recticle_yellow=0x7f02000f;
-        public static final int red=0x7f020010;
-        public static final int violet=0x7f020011;
-        public static final int white=0x7f020012;
-        public static final int yellow=0x7f020013;
+        public static final int lion=0x7f020005;
+        public static final int orange=0x7f020006;
+        public static final int pink=0x7f020007;
+        public static final int recticle=0x7f020008;
+        public static final int recticle_blue=0x7f020009;
+        public static final int recticle_green=0x7f02000a;
+        public static final int recticle_orange=0x7f02000b;
+        public static final int recticle_pink=0x7f02000c;
+        public static final int recticle_red=0x7f02000d;
+        public static final int recticle_violet=0x7f02000e;
+        public static final int recticle_white=0x7f02000f;
+        public static final int recticle_yellow=0x7f020010;
+        public static final int red=0x7f020011;
+        public static final int violet=0x7f020012;
+        public static final int white=0x7f020013;
+        public static final int yellow=0x7f020014;
     }
     public static final class id {
         public static final int board=0x7f050000;
