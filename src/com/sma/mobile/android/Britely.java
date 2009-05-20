@@ -312,7 +312,6 @@ public class Britely extends Activity {
 		int cols;
 		public Paint paint;
 		public Matrix matrix;
-		public Bitmap bitmapSave = null;
 		Bitmap bitmap = null;
 		public HashMap<Integer,Drawable> palette;
 		public HashMap<Integer,Drawable> recticles;		
@@ -554,13 +553,14 @@ public class Britely extends Activity {
 		public boolean loadFile(Uri dataUri) {
 			try {
 		        Bitmap resizedBitmap;
+		        Bitmap bitmapSave = null;
+		        	        
+		        try {
+		        	bitmapSave 	= Media.getBitmap(contentResolver, dataUri);
+		        } catch (OutOfMemoryError ex) {
+		        	bitmapSave.recycle();
+		        }
 		        
-				if (bitmapSave != null) {
-					bitmapSave.recycle();
-					bitmapSave = null;
-				}
-				bitmapSave 	= Media.getBitmap(contentResolver, dataUri);
-
 				int width 	= bitmapSave.getWidth();
 				int height 	= bitmapSave.getHeight();
 
